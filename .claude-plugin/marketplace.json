@@ -1,9 +1,9 @@
 {
-  "name": "agent-looker-marketplace",
+  "name": "Agent Looker for Claude",
   "owner": { "name": "Gogolook" },
   "plugins": [
     {
-      "name": "agent-looker",
+      "name": "Agent Looker for Claude Cowork",
       "source": "./",
       "description": "URL safety check, content moderation, and risk reporting for AI agents"
     }
