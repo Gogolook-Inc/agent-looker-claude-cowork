@@ -1,0 +1,11 @@
+{
+  "name": "agent-looker-marketplace",
+  "owner": { "name": "Gogolook" },
+  "plugins": [
+    {
+      "name": "agent-looker",
+      "source": "./",
+      "description": "URL safety check, content moderation, and risk reporting for AI agents"
+    }
+  ]
+}

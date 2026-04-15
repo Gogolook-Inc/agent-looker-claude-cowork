@@ -1,0 +1,24 @@
+{
+  "name": "agent-looker",
+  "version": "1.0.0",
+  "description": "URL safety check, content moderation, and risk reporting for AI agents via AgentLooker MCP server",
+  "author": {
+    "name": "Gogolook",
+    "email": "service@gogolook.com",
+    "url": "https://www.gogolook.com/zh-tw/contact"
+  },
+  "homepage": "https://agent-looker.whoscall.com/",
+  "repository": "https://github.com/Gogolook-Inc/agent-looker-claude",
+  "license": "Apache-2.0",
+  "keywords": [
+    "security",
+    "safety",
+    "url-safety",
+    "content-moderation",
+    "prompt-injection",
+    "jailbreak",
+    "risk-reporting",
+    "mcp",
+    "plugin"
+  ]
+}
