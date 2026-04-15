@@ -1,5 +1,5 @@
 {
-  "name": "Agent Looker for Claude Cowork",
+  "name": "agent-looker-for-claude-cowork",
   "version": "1.0.0",
   "description": "URL safety check, content moderation, and risk reporting for AI agents via AgentLooker MCP server",
   "author": {
