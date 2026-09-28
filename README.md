@@ -1,6 +1,6 @@
 # Agent Looker - Claude Cowork Plugin
 
-A plugin for [Claude Cowork](https://claude.ai/code) that protects AI agents from unsafe URLs, malicious content, and prompt injection attacks via the [Agent Looker](https://agent-looker.whoscall.com/) MCP server.
+A plugin for [Claude Cowork](https://claude.com/docs/cowork/guide/plugins) that protects AI agents from unsafe URLs, malicious content, and prompt injection attacks via the [Agent Looker](https://agentlooker.ai/) MCP server.
 
 ## What it does
 
@@ -20,7 +20,7 @@ Agent Looker adds two layers of protection to your Claude Cowork sessions:
 | `report-risk-url` | Proactively, when a suspicious URL is discovered | Phishing, malware, scam, suspicious redirects |
 | `report-risk-text` | Proactively, when suspicious text is discovered | Prompt injection, jailbreak, data leaks |
 
-> **Note:** Unlike the full Claude Code plugin, hooks in this Cowork edition do not make direct API calls — they inject security rules that guide Claude to use the MCP skills. All actual threat detection goes through the skills.
+> **Note:** Unlike the full Claude Code plugin, hooks in this Cowork edition do not make direct API calls — they inject security rules that guide Claude to use the MCP skills. All actual threat detection goes through the skills. Which hook events Cowork runs is not documented by Anthropic, so the skills are written to work even if the hooks never fire.
 
 ## How protection works
 
@@ -49,33 +49,56 @@ A safe URL can still serve malicious content. URL checks and content checks are 
 
 ## Requirements
 
-- [Claude Cowork](https://claude.ai/code) with MCP support
-- Agent Looker MCP server configured in your Cowork workspace
-- An Agent Looker account (sign up at the [dashboard](https://agent-looker.whoscall.com/))
+- Claude Desktop with [Claude Cowork](https://claude.com/docs/cowork/guide/plugins) and plugin support
+- An Agent Looker account (sign up at the [dashboard](https://app.agentlooker.ai/))
+
+No Node.js, no CLI, no setup script. Everything is installed from the Cowork UI.
 
 ## Installation
 
-### 1. Configure the Agent Looker MCP server
+### 1. Add the marketplace
 
-Add the Agent Looker MCP server to your Claude Cowork workspace settings. The MCP server provides the `check_url_safety`, `check_text_safety`, `report_risk_url`, and `report_risk_text` tools that skills call into.
+In Claude Desktop open **Customize → Plugins → Add marketplace** and enter:
 
-Refer to your Agent Looker dashboard for the MCP server URL and authentication token.
+```
+Gogolook-Inc/agent-looker-claude-cowork
+```
 
-### 2. Load hooks
+### 2. Install the plugin
 
-Copy `hooks/hooks.json` into your Claude Cowork hooks configuration, or reference it from your workspace's hook settings. The hooks inject Agent Looker security rules into Claude's context before and after `WebFetch` and `WebSearch` calls.
+Pick **agent-looker-for-claude-cowork** from the marketplace and install it. This registers the MCP connector, the hooks, and the four skills in one step.
 
-### 3. Load skills
+### 3. Sign in to the connector
 
-Copy the `skills/` directory into your Claude Cowork skills directory. Each subdirectory contains a `SKILL.md` that teaches Claude when and how to call the corresponding MCP tool.
+Open the plugin's **Connectors** tab and sign in to **agent-looker**. Cowork starts a standard OAuth 2.1 flow: a browser tab opens, you sign in with Google, and approve access. No token to copy. The resulting credential shows up in the dashboard under Tokens, named after the OAuth client, and can be revoked there.
 
-### 4. Restart Claude Cowork
+### 4. Restart the session
 
-Restart your Claude Cowork session to activate the hooks and skills.
+Start a new Cowork session to activate the hooks and skills.
+
+## Pointing at another environment (staging / develop)
+
+Cowork has no environment variables, no settings file, and no way to edit a connector's URL, so the environment is baked into the plugin you install. Each git branch of this repo carries its own `.mcp.json`, and the marketplace lists one entry per branch:
+
+| Marketplace entry | Branch | API |
+|---|---|---|
+| `agent-looker-for-claude-cowork` | `production` (default) | `https://api.agentlooker.ai/mcp` |
+| `agent-looker-for-claude-cowork-staging` | `staging` | `https://api-staging.agentlooker.ai/mcp` |
+| `agent-looker-for-claude-cowork-develop` | `develop` | `https://api-develop.agentlooker.ai/mcp` |
+
+Install exactly one of them. They all register an MCP server named `agent-looker`, so installing two side by side will collide. To switch, uninstall the current one and install another.
+
+The staging and develop entries are for internal testing. Their sign-in page sits behind HTTP Basic Auth at the CDN; the browser will prompt for it once before the Google login. The machine-to-machine OAuth endpoints (`/oauth/register`, `/oauth/token`, `/mcp`) are exempt, so the flow completes normally after that.
+
+Maintainers: `.mcp.json` is the only file that differs between branches, and you never edit it by hand. The [mcp-url workflow](.github/workflows/mcp-url.yml) fails a pull request whose `.mcp.json` does not match the target branch, and on every push it rewrites the file to that branch's API and commits the fix. Promoting develop → staging → production therefore cannot carry the wrong URL upward.
 
 ## Project structure
 
 ```
+.claude-plugin/
+  plugin.json          # Plugin metadata
+  marketplace.json     # Marketplace listing: one entry per environment
+.mcp.json              # MCP connector; URL differs per branch
 hooks/
   hooks.json           # PreToolUse / PostToolUse hook definitions
                        # (injects security rules via additionalContext)
@@ -88,12 +111,14 @@ skills/
 
 ## Difference from the full Claude Code plugin
 
-| Feature | Claude Code plugin | Claude Cowork plugin |
+| Feature | [Claude Code plugin](https://github.com/Gogolook-Inc/agent-looker-claude-code) | Claude Cowork plugin |
 |---------|-------------------|---------------------|
 | PreToolUse URL blocking | Calls API directly, blocks before fetch | Injects rules; Claude calls MCP skill |
 | PostToolUse content scan | Calls API directly, warns via context | Injects rules; Claude calls MCP skill |
-| Setup script | Yes (`bin/setup.mjs`) | No |
-| Authentication | `~/.agent-looker.cfg` | Via MCP server configuration |
+| Install | `claude plugin` CLI + `bin/setup.mjs` | Cowork UI only |
+| Authentication | Device flow; token stored in `~/.claude/settings.json` `env`, named `claude-code-cli_<hostname>` | OAuth 2.1 sign-in from the Connectors tab |
+| Switching environment | `AGENT_LOOKER_MCP_URL` env var / `--mcp-url` | Install the matching marketplace entry |
+| Config storage | `~/.claude/` (shared with Claude Code CLI) | Claude Desktop's own storage (`Claude-3p`), separate from `~/.claude/` |
 | Node.js required | Yes (for hook scripts) | No |
 
 ## License
