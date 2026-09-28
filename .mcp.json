@@ -2,7 +2,7 @@
   "mcpServers": {
     "agent-looker": {
       "type": "http",
-      "url": "https://api-develop.agentlooker.ai/mcp"
+      "url": "https://api.agentlooker.ai/mcp"
     }
   }
 }
