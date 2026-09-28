@@ -2,7 +2,7 @@
   "mcpServers": {
     "agent-looker": {
       "type": "http",
-      "url": "https://agent-looker-staging.whoscall.com/mcp"
+      "url": "https://api-develop.agentlooker.ai/mcp"
     }
   }
 }

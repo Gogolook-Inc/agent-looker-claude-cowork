@@ -1,6 +1,6 @@
 # Agent Looker - Claude Cowork Plugin
 
-透過 [Agent Looker](https://agent-looker.whoscall.com/) MCP server，保護你的 [Claude Cowork](https://claude.ai/code) AI agent 免於不安全的 URL、惡意內容和 prompt injection 攻擊。
+透過 [Agent Looker](https://agentlooker.ai/) MCP server，保護你的 [Claude Cowork](https://claude.com/docs/cowork/guide/plugins) AI agent 免於不安全的 URL、惡意內容和 prompt injection 攻擊。
 
 ## 功能介紹
 
@@ -49,33 +49,52 @@ PreToolUse hook：將安全規則注入 Claude 的 context
 
 ## 系統需求
 
-- 支援 MCP 的 [Claude Cowork](https://claude.ai/code)
-- 在你的 Cowork workspace 中設定 Agent Looker MCP server
-- Agent Looker 帳號（在 [dashboard](https://agent-looker.whoscall.com/) 註冊）
+- 支援 plugin 的 Claude Desktop 與 [Claude Cowork](https://claude.com/docs/cowork/guide/plugins)
+- Agent Looker 帳號（在 [dashboard](https://app.agentlooker.ai/login) 註冊）
 
 ## 安裝
 
-### 1. 設定 Agent Looker MCP server
+### 1. 加入 marketplace
 
-在 Claude Cowork workspace 設定中新增 Agent Looker MCP server。MCP server 提供 skills 所需的 `check_url_safety`、`check_text_safety`、`report_risk_url` 和 `report_risk_text` tools。
+在 Claude Desktop 開啟 **Customize → Plugins → Add marketplace**，輸入：
 
-MCP server URL 和認證 token 請參考你的 Agent Looker dashboard。
+```
+Gogolook-Inc/agent-looker-claude-cowork
+```
 
-### 2. 載入 hooks
+### 2. 安裝 plugin
 
-將 `hooks/hooks.json` 複製到 Claude Cowork 的 hook 設定中，或在 workspace hook 設定中引用它。Hooks 會在 `WebFetch` 和 `WebSearch` 呼叫前後，將 Agent Looker 安全規則注入 Claude 的 context。
+在 marketplace 中選擇 **agent-looker-for-claude-cowork** 安裝。這一步會同時註冊 MCP connector、hooks 和四個 skills。
 
-### 3. 載入 skills
+### 3. 登入 connector
 
-將 `skills/` 目錄複製到 Claude Cowork 的 skills 目錄。每個子目錄包含一個 `SKILL.md`，教導 Claude 何時以及如何呼叫對應的 MCP tool。
+打開 plugin 的 **Connectors** 分頁，對 **agent-looker** 按下登入。Cowork 會走標準的 OAuth 2.1 流程：開啟瀏覽器、用 Google 帳號登入、同意授權即可，不需要複製任何 token。產生的憑證會出現在 dashboard 的 Tokens 頁，名稱取自 OAuth client，可在那裡撤銷。
 
-### 4. 重新啟動 Claude Cowork
+### 4. 重新開啟對話
 
-重新啟動 Claude Cowork 對話以啟用 hooks 和 skills。
+開啟新的 Cowork 對話以啟用 hooks 和 skills。
+
+## 切換到其他環境（staging / develop）
+
+這個 repo 每個 git branch 各自帶一份 `.mcp.json`，marketplace 對應列出一個 entry：
+
+| Marketplace entry | Branch | API |
+|---|---|---|
+| `agent-looker-for-claude-cowork` | `production`（預設） | `https://api.agentlooker.ai/mcp` |
+| `agent-looker-for-claude-cowork-staging` | `staging` | `https://api-staging.agentlooker.ai/mcp` |
+| `agent-looker-for-claude-cowork-develop` | `develop` | `https://api-develop.agentlooker.ai/mcp` |
+
+只能裝其中一個。三個 entry 註冊的 MCP server 都叫 `agent-looker`，同時裝兩個會互相衝突。要換環境，先解除安裝目前的再裝另一個。
+
+> `.mcp.json` 是 branch 之間唯一不同的檔案，而且不需要手動改。[mcp-url workflow](.github/workflows/mcp-url.yml) 會讓 `.mcp.json` 與目標 branch 不符的 pull request 失敗，每次 push 也會把檔案改寫成該 branch 的 API 並自動 commit。
 
 ## 專案結構
 
 ```
+.claude-plugin/
+  plugin.json          # Plugin 後設資料
+  marketplace.json     # Marketplace 列表：每個環境一個 entry
+.mcp.json              # MCP connector；網址依 branch 不同
 hooks/
   hooks.json           # PreToolUse / PostToolUse hook 定義
                        # （透過 additionalContext 注入安全規則）
@@ -88,12 +107,14 @@ skills/
 
 ## 與完整 Claude Code plugin 的差異
 
-| 功能 | Claude Code plugin | Claude Cowork plugin |
+| 功能 | [Claude Code plugin](https://github.com/Gogolook-Inc/agent-looker-claude-code) | Claude Cowork plugin |
 |------|-------------------|---------------------|
 | PreToolUse URL 攔截 | 直接呼叫 API，在 fetch 前阻擋 | 注入規則；由 Claude 呼叫 MCP skill |
 | PostToolUse 內容掃描 | 直接呼叫 API，透過 context 警告 | 注入規則；由 Claude 呼叫 MCP skill |
-| Setup script | 有（`bin/setup.mjs`） | 無 |
-| 認證方式 | `~/.agent-looker.cfg` | 透過 MCP server 設定 |
+| 安裝方式 | `claude plugin` CLI + `bin/setup.mjs` | 只用 Cowork 介面 |
+| 認證方式 | Device flow；token 存在 `~/.claude/settings.json` 的 `env`，名稱為 `claude-code-cli_<主機名稱>` | 從 Connectors 分頁走 OAuth 2.1 登入 |
+| 切換環境 | `AGENT_LOOKER_MCP_URL` 環境變數 / `--mcp-url` | 安裝對應的 marketplace entry |
+| 設定存放 | `~/.claude/`（與 Claude Code CLI 共用） | Claude Desktop 自己的儲存空間（`Claude-3p`），與 `~/.claude/` 分開 |
 | 需要 Node.js | 是（用於 hook scripts） | 否 |
 
 ## 授權條款
