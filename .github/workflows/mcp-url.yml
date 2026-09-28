@@ -1,0 +1,72 @@
+# Keeps .mcp.json pinned to the API of the branch it lives on.
+#
+# Branch == environment for the Cowork plugin (Cowork has no env vars), so
+# .mcp.json is the one file that must differ between develop / staging /
+# production. Merging develop -> staging -> production would otherwise carry
+# the wrong URL upward.
+#
+#   pull_request  -> check only: fail if .mcp.json does not match the target branch
+#   push          -> auto-fix: rewrite .mcp.json and commit if it drifted
+name: Pin .mcp.json to branch environment
+
+on:
+  pull_request:
+    branches: [develop, staging, production]
+  push:
+    branches: [develop, staging, production]
+
+permissions:
+  contents: write
+
+jobs:
+  mcp-url:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full ref so we can push the fix back on the push event.
+          ref: ${{ github.event_name == 'push' && github.ref_name || '' }}
+
+      - name: Resolve expected URL for this branch
+        id: expect
+        run: |
+          case "${{ github.event_name == 'pull_request' && github.base_ref || github.ref_name }}" in
+            production) url="https://api.agentlooker.ai/mcp" ;;
+            staging)    url="https://api-staging.agentlooker.ai/mcp" ;;
+            develop)    url="https://api-develop.agentlooker.ai/mcp" ;;
+            *) echo "unknown branch"; exit 1 ;;
+          esac
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: Compare / rewrite .mcp.json
+        id: fix
+        env:
+          EXPECTED: ${{ steps.expect.outputs.url }}
+          MODE: ${{ github.event_name }}
+        run: |
+          node - <<'JS'
+          const fs = require("fs");
+          const file = ".mcp.json";
+          const cfg = JSON.parse(fs.readFileSync(file, "utf8"));
+          const server = cfg.mcpServers?.["agent-looker"];
+          if (!server) { console.error(".mcp.json has no mcpServers['agent-looker']"); process.exit(1); }
+          const expected = process.env.EXPECTED;
+          if (server.url === expected) { console.log(`ok: ${expected}`); process.exit(0); }
+          console.log(`drift: ${server.url}  ->  ${expected}`);
+          if (process.env.MODE === "pull_request") {
+            console.error(`::error file=.mcp.json::url must be ${expected} on this branch`);
+            process.exit(1);
+          }
+          server.url = expected;
+          fs.writeFileSync(file, JSON.stringify(cfg, null, 2) + "\n");
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, "changed=true\n");
+          JS
+
+      - name: Commit the fix
+        if: github.event_name == 'push' && steps.fix.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .mcp.json
+          git commit -m "chore: pin .mcp.json to ${{ github.ref_name }} API [skip ci]"
+          git push
