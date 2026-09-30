@@ -5,7 +5,17 @@
     {
       "name": "agent-looker-for-claude-cowork",
       "source": "./",
-      "description": "URL safety check, content moderation, and risk reporting for AI agents"
+      "description": "URL safety check, content moderation, and risk reporting for AI agents (production)"
+    },
+    {
+      "name": "agent-looker-for-claude-cowork-staging",
+      "source": { "source": "github", "repo": "Gogolook-Inc/agent-looker-claude-cowork", "ref": "staging" },
+      "description": "Agent Looker for Claude Cowork — staging API (internal testing only)"
+    },
+    {
+      "name": "agent-looker-for-claude-cowork-develop",
+      "source": { "source": "github", "repo": "Gogolook-Inc/agent-looker-claude-cowork", "ref": "develop" },
+      "description": "Agent Looker for Claude Cowork — develop API (internal testing only)"
     }
   ]
 }
