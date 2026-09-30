@@ -78,17 +78,17 @@ Start a new Cowork session to activate the hooks and skills.
 
 ## Pointing at another environment (staging / develop)
 
-Cowork has no environment variables, no settings file, and no way to edit a connector's URL, so the environment is baked into the plugin you install. Each git branch of this repo carries its own `.mcp.json`, and the marketplace lists one entry per branch:
+Cowork has no environment variables, no settings file, and no way to edit a connector's URL, so the environment is baked into the plugin you install. Each git branch of this repo carries its own `.mcp.json`; pick the environment by adding the marketplace from that branch (`owner/repo#branch`):
 
-| Marketplace entry | Branch | API |
+| Add marketplace as | Branch | API |
 |---|---|---|
-| `agent-looker-for-claude-cowork` | `production` (default) | `https://api.agentlooker.ai/mcp` |
-| `agent-looker-for-claude-cowork-staging` | `staging` | `https://api-staging.agentlooker.ai/mcp` |
-| `agent-looker-for-claude-cowork-develop` | `develop` | `https://api-develop.agentlooker.ai/mcp` |
+| `Gogolook-Inc/agent-looker-claude-cowork` | `production` (default) | `https://api.agentlooker.ai/mcp` |
+| `Gogolook-Inc/agent-looker-claude-cowork#staging` | `staging` | `https://api-staging.agentlooker.ai/mcp` |
+| `Gogolook-Inc/agent-looker-claude-cowork#develop` | `develop` | `https://api-develop.agentlooker.ai/mcp` |
 
-Install exactly one of them. They all register an MCP server named `agent-looker`, so installing two side by side will collide. To switch, uninstall the current one and install another.
+The plugin name is the same on every branch (**agent-looker-for-claude-cowork**), so the rest of the installation is identical. Keep exactly one installed: all branches share the marketplace name and register an MCP server named `agent-looker`, so they cannot coexist. To switch, uninstall the plugin, remove the marketplace, and add it again from the other branch.
 
-The staging and develop entries are for internal testing. Their sign-in page sits behind HTTP Basic Auth at the CDN; the browser will prompt for it once before the Google login. The machine-to-machine OAuth endpoints (`/oauth/register`, `/oauth/token`, `/mcp`) are exempt, so the flow completes normally after that.
+The staging and develop branches are for internal testing. Their sign-in page sits behind HTTP Basic Auth at the CDN; the browser will prompt for it once before the Google login. The machine-to-machine OAuth endpoints (`/oauth/register`, `/oauth/token`, `/mcp`) are exempt, so the flow completes normally after that.
 
 Maintainers: `.mcp.json` is the only file that differs between branches, and you never edit it by hand. The [mcp-url workflow](.github/workflows/mcp-url.yml) fails a pull request whose `.mcp.json` does not match the target branch, and on every push it rewrites the file to that branch's API and commits the fix. Promoting develop → staging → production therefore cannot carry the wrong URL upward.
 
@@ -97,7 +97,7 @@ Maintainers: `.mcp.json` is the only file that differs between branches, and you
 ```
 .claude-plugin/
   plugin.json          # Plugin metadata
-  marketplace.json     # Marketplace listing: one entry per environment
+  marketplace.json     # Marketplace listing (identical on every branch)
 .mcp.json              # MCP connector; URL differs per branch
 hooks/
   hooks.json           # PreToolUse / PostToolUse hook definitions
@@ -117,7 +117,7 @@ skills/
 | PostToolUse content scan | Calls API directly, warns via context | Injects rules; Claude calls MCP skill |
 | Install | `claude plugin` CLI + `bin/setup.mjs` | Cowork UI only |
 | Authentication | Device flow; token stored in `~/.claude/settings.json` `env`, named `claude-code-cli_<hostname>` | OAuth 2.1 sign-in from the Connectors tab |
-| Switching environment | `AGENT_LOOKER_MCP_URL` env var / `--mcp-url` | Install the matching marketplace entry |
+| Switching environment | `AGENT_LOOKER_MCP_URL` env var / `--mcp-url` | Add the marketplace from the matching branch (`#staging`, `#develop`) |
 | Config storage | `~/.claude/` (shared with Claude Code CLI) | Claude Desktop's own storage (`Claude-3p`), separate from `~/.claude/` |
 | Node.js required | Yes (for hook scripts) | No |
 
