@@ -32,9 +32,12 @@ PreToolUse hook: injects security rules into Claude's context
       |
       Claude calls check_url_safety (MCP skill)
       |
-      +-- UNSAFE --> Claude blocks the fetch and informs the user
+      +-- UNSAFE  --> Claude blocks the fetch and informs the user
       |
-      +-- SAFE   --> WebFetch executes
+      +-- UNKNOWN --> not in the trust cache: Claude judges how sensitive the action is and
+      |               runs deep_scan (10–25 s) only if it really needs the URL
+      |
+      +-- SAFE    --> WebFetch executes
                         |
                         v
                PostToolUse hook: injects security rules into Claude's context
