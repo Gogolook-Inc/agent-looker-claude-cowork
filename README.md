@@ -37,6 +37,9 @@ PreToolUse hook: injects security rules into Claude's context
       +-- UNKNOWN --> not in the trust cache: Claude judges how sensitive the action is and
       |               runs deep_scan (10–25 s) only if it really needs the URL
       |
+      +-- WARNING --> low trust score, no threat reports: Claude may read the page but enters
+      |               no credentials, downloads nothing and runs nothing from it
+      |
       +-- SAFE    --> WebFetch executes
                         |
                         v

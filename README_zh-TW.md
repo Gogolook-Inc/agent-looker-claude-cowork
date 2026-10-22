@@ -37,6 +37,9 @@ PreToolUse hook：將安全規則注入 Claude 的 context
       +-- 未分析 --> 不在信任快取中：Claude 判斷操作敏感度，
       |             真的需要該 URL 時才 deep_scan（10–25 秒）
       |
+      +-- 警告   --> 信任分數偏低但無威脅通報：Claude 可以閱讀，
+      |             但不輸入帳密、不下載、不執行任何東西
+      |
       +-- 安全   --> WebFetch 執行
                         |
                         v
