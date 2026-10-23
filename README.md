@@ -32,9 +32,15 @@ PreToolUse hook: injects security rules into Claude's context
       |
       Claude calls check_url_safety (MCP skill)
       |
-      +-- UNSAFE --> Claude blocks the fetch and informs the user
+      +-- UNSAFE  --> Claude blocks the fetch and informs the user
       |
-      +-- SAFE   --> WebFetch executes
+      +-- UNKNOWN --> not in the trust cache: Claude judges how sensitive the action is and
+      |               runs deep_scan (10–25 s) only if it really needs the URL
+      |
+      +-- WARNING --> low trust score, no threat reports: Claude may read the page but enters
+      |               no credentials, downloads nothing and runs nothing from it
+      |
+      +-- SAFE    --> WebFetch executes
                         |
                         v
                PostToolUse hook: injects security rules into Claude's context
@@ -78,7 +84,7 @@ Start a new Cowork session to activate the hooks and skills.
 
 ## Pointing at another environment (staging / develop)
 
-Cowork has no environment variables, no settings file, and no way to edit a connector's URL, so the environment is baked into the plugin you install. Each git branch of this repo carries its own `.mcp.json`, and the marketplace lists one entry per branch:
+Cowork has no environment variables, no settings file, and no way to edit a connector's URL, so the environment is baked into the plugin you install. Cowork's **Add marketplace** field also accepts only `owner/repo` with no branch suffix (`#staging` is rejected), so each git branch of this repo carries its own `.mcp.json`, and the marketplace lists one entry per branch:
 
 | Marketplace entry | Branch | API |
 |---|---|---|
