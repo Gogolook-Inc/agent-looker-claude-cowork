@@ -7,6 +7,11 @@
 #
 #   pull_request  -> check only: fail if .mcp.json does not match the target branch
 #   push          -> auto-fix: rewrite .mcp.json and commit if it drifted
+#
+# The fix commit carries no "[skip ci]": pushes made with GITHUB_TOKEN never start another
+# workflow run anyway, and GitHub reads skip markers from the whole head commit message, so a
+# later merge commit whose body lists "chore: pin ... [skip ci]" would silently skip the run
+# on the branch it was merged into (agent-looker-for-hermes production once kept the staging URL).
 name: Pin .mcp.json to branch environment
 
 on:
@@ -68,5 +73,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add .mcp.json
-          git commit -m "chore: pin .mcp.json to ${{ github.ref_name }} API [skip ci]"
+          git commit -m "chore: pin .mcp.json to ${{ github.ref_name }} API"
           git push
